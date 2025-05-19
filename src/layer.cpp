@@ -53,7 +53,6 @@ std::vector<float> Layer::backward(const std::vector<float> &deltas_next,
                                    const std::vector<std::vector<float>> &weights_next)
 {
     std::vector<float> deltas(neurons.size(), 0.0f);
-
     for (size_t i = 0; i < neurons.size(); ++i)
     {
         float sum = 0.0f;
@@ -61,7 +60,6 @@ std::vector<float> Layer::backward(const std::vector<float> &deltas_next,
             sum += weights_next[j][i] * deltas_next[j];
         deltas[i] = sum * activation_derivative(last_z[i]);
     }
-
     return deltas;
 }
 

@@ -1,5 +1,4 @@
 #include <iostream>
-#include "perceptron.hpp"
 #include "mlp.hpp"
 
 int main(int argc, char *argv[])

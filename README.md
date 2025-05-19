@@ -1,30 +1,12 @@
-# Perceptron
+# MLP (Multi-Layer Perceptron)
 
 By Braulio Nayap Maldonado Casilla
 
 ## Introducción
 
-El **perceptrón** es uno de los modelos más simples y fundamentales dentro del campo del aprendizaje automático y las redes neuronales artificiales. Fue propuesto por **Frank Rosenblatt** en 1958 como un algoritmo para la clasificación binaria inspirado en el funcionamiento de las neuronas biológicas. [1]
+El **MLP (Perceptrón Multicapa)** es un tipo de red neuronal artificial compuesta por múltiples capas de neuronas organizadas jerárquicamente. A diferencia del perceptrón simple, el MLP puede aprender representaciones no lineales gracias a sus capas ocultas y al uso de funciones de activación no lineales como la sigmoide, la ReLU o la tangente hiperbólica. Estas características lo hacen especialmente adecuado para resolver problemas complejos como la clasificación no lineal, por ejemplo, el problema clásico de la compuerta XOR.
 
-El perceptrón es una neurona artificial que toma un conjunto de entradas:
-
-![Ejecución make](.docs/f1.png)
-
-con pesos asociados:
-
-![Ejecución make](.docs/f2.png)
-
-y un término de sesgo (bias) b, para ser utilizados por una función de activación y producir una salida binaria
-
-![Ejecución make](.docs/f0.png)
-
-El valor neto de entrada se calcula como:
-
-![Ejecución make](.docs/f3.png)
-
-La salida del perceptrón se define como:
-
-![Ejecución make](.docs/f4.png)
+---
 
 ## Implementación en C++
 
@@ -120,7 +102,7 @@ Neuron::Neuron(int n_inputs, std::function<float(float)> activation_func)
     }
   ```
 
-### Función de actualización de pesos
+#### Función de actualización de pesos
 
 Recibe los valores de entrada, el error (diferencia entre la salida esperada y la salida real) y la tasa de aprendizaje del entrenamiento realizado en una epoch. Con ello se ajustan los pesos y el sesgo de acuerdo con la regla de actualización de perceptrón (regla delta):
 
@@ -143,7 +125,7 @@ void Neuron::update_weights(const std::vector<float> &inputs, float err, float l
 }
 ```
 
-### Función Forward (Propagación hacia Adelante)
+#### Función Forward (Propagación hacia Adelante)
 
 Calcula la salida de la neurona dados los valores de entrada. La salida se obtiene realizando la suma ponderada de las entradas (producto de cada entrada por su peso respectivo), añadiendo el sesgo y pasando el resultado a través de la función de activación (como en la formula de la Introducción):
 
@@ -160,152 +142,6 @@ float Neuron::forward(const std::vector<float> &inputs)
 ```
 
 ---
-
-### Clase Perceptron
-
-Encapsula el funcionamiento completo de un perceptrón simple binario usando una instancia de la clase `Neuron`. Sus atributos iniciales son la clase Neuron y el ratio de aprendizaje.
-
-```cpp
-class Perceptron
-{
-private:
-    Neuron n;
-    float lr;
-
-public:
-    Perceptron(int n_inputs, float lr = 0.1, std::function<float(float)> act = nullptr);
-    void print_weights();
-    void train(const std::vector<std::vector<float>> &X, const std::vector<float> &y);
-    float predict(const std::vector<float> &inputs);
-    void save_weights(const std::string &filename);
-    bool load_weights(const std::string &filename);
-};
-```
-
-#### Constructor
-
-Se recibe como parametros la cantidad de entradas, ratio de aprendizaje y la funcion de aprendizaje. Todo esto se comprueba que no sean datos invalidos y se inicializan `lr` y `neuron`.
-
-```cpp
-Perceptron::Perceptron(int n_inputs, float lr_input, std::function<float(float)> act)
-{
-    if (n_inputs <= 0)
-        throw std::invalid_argument("N inputs must be positive: " + std::to_string(n_inputs));
-    if (lr <= 0)
-        throw std::invalid_argument("Learning rate must be positive: " + std::to_string(lr_input));
-    lr = lr_input;
-    n = Neuron(n_inputs, act);
-}
-```
-
-#### Función Entrenamiento
-
-Entrena el perceptrón con un conjunto de características `X` y salidas esperadas `y`. Realiza un bucle hasta que los pesos converjan (no existan errores). Para ello en cada bucle se calcula la prediccion de cada una de las entradas con la función `forward` de la nuerona y se evalúa si hay error con las salidas esperadas, en caso que si existan se procede a ejecutar el ajuste de pesos de la neurona `update_weights`.
-
-```cpp
-void Perceptron::train(const std::vector<std::vector<float>> &X, const std::vector<float> &y)
-{
-    if (X.size() != y.size())
-        throw std::invalid_argument("Size of X /= size of y");
-    if (X.empty())
-        throw std::invalid_argument("X is empty");
-    if (X[0].size() != n.get_weights().size())
-        throw std::invalid_argument("Size of X[0] /= n inputs");
-
-    int epoch = 0;
-    bool converged = false;
-
-    std::cout << "Epoch \t| Pesos \t| Sesgo | Error\n";
-
-    while (!converged)
-    {
-        converged = true;
-        int total_errors = 0;
-
-        for (size_t i = 0; i < X.size(); i++)
-        {
-            auto prediction = n.forward(X[i]);
-            auto err = y[i] - prediction;
-            if (err != 0)
-            {
-                n.update_weights(X[i], err, lr);
-                converged = false;
-                total_errors++;
-            }
-        }
-
-        // Imprimir pesos, sesgo y error
-        std::cout << epoch << " \t| ";
-        for (auto w : n.get_weights())
-            std::cout << w << " ";
-        std::cout << " \t| " << n.get_sesgo() << " \t| " << total_errors << " |\n";
-
-        epoch++;
-    }
-}
-```
-
-#### Funcion de predicción
-
-Recibe un grupo de entradas, las cuales las pasa por el `forward` de `Neuron` para calcular la salida. Siempre validando que la cantidad de entradas sea congruente.
-
-```cpp
-float Perceptron::predict(const std::vector<float> &inputs)
-{
-    if (inputs.size() != n.get_weights().size())
-        throw std::invalid_argument("Size of inputs /= n inputs");
-    return n.forward(inputs);
-}
-```
-
-#### Función de Mostrar Pesos
-
-Muestra los pesos y el sesgo actual que tenga la neurona.
-
-```cpp
-void Perceptron::print_weights()
-{
-    std::cout << "Pesos: ";
-    for (auto x : n.get_weights())
-        std::cout << x << " ";
-    std::cout << "| Sesgo: " << n.get_sesgo() << std::endl;
-}
-```
-
-#### Función de Guardar y Cargar Pesos
-
-- `save_weights`: Guarda los pesos y sesgo en un archivo txt
-
-```cpp
-void Perceptron::save_weights(const std::string &filename)
-{
-    std::ofstream file(filename);
-    for (float x : n.get_weights())
-        file << x << " ";
-    file << n.get_sesgo() << std::endl;
-    file.close();
-}
-```
-
-- `load_weights`: Carga los pesos que ya fueron guardados para ya no entrenar nuevamente y solo predecir la salida.
-
-```cpp
-bool Perceptron::load_weights(const std::string &filename)
-{
-    std::ifstream file(filename);
-    if (!file.is_open())
-        return false;
-    auto sesgo_backup = n.get_sesgo();
-    auto w_backup = n.get_weights();
-    for (size_t i = 0; i < w_backup.size(); i++)
-        file >> w_backup[i];
-    file >> sesgo_backup;
-    file.close();
-    n.set_weights(w_backup);
-    n.set_sesgo(sesgo_backup);
-    return true;
-}
-```
 
 ### Clase Dataset
 
@@ -387,6 +223,507 @@ const std::vector<float> &Dataset::get_y() const
 }
 ```
 
+---
+
+### Clase `Layer`
+
+Representa una **capa completa de neuronas** dentro de una red neuronal. Cada capa se compone de múltiples instancias de la clase `Neuron` y administra tanto la propagación hacia adelante (_forward_) como hacia atrás (_backward_), así como la actualización de los pesos en función de los errores y la tasa de aprendizaje. Se almacenarán las funciones para activación, las entradas, los resultados antes de la activación y la lista de neuronas.
+
+```cpp
+
+class Layer
+{
+private:
+    std::vector<Neuron> neurons;
+    std::function<float(float)> activation;
+    std::function<float(float)> activation_derivative;
+    std::vector<float> last_input;
+    std::vector<float> last_z;
+
+public:
+    Layer() = default;
+    Layer(int n_neurons, int n_inputs_per_neuron,
+          std::function<float(float)> act,
+          std::function<float(float)> act_deriv);
+    void load_layer(int n_neurons, int n_inputs_per_neuron,
+                    std::function<float(float)> act,
+                    std::function<float(float)> act_deriv,
+                    const std::vector<std::vector<float>> &all_weights,
+                    const std::vector<float> &all_biases);
+    std::vector<float> forward(const std::vector<float> &inputs);
+    std::vector<float> backward(const std::vector<float> &deltas_next,
+                                const std::vector<std::vector<float>> &weights_next);
+    void update_weights(float lr, const std::vector<float> &deltas);
+    const std::vector<float> &get_last_input() const;
+    const std::vector<float> &get_last_z() const;
+    const std::vector<Neuron> &get_neurons() const;
+    std::function<float(float)> get_activation_derivative() const { return activation_derivative; }
+};
+```
+
+#### Constructor
+
+Inicializa una capa con `n` neuronas, cada una con `n_inputs_per_neuron` entradas. Asocia la función de activación y su derivada para utilizar en los procesos de propagación directa e inversa.
+
+```cpp
+Layer::Layer(int n_neurons, int n_inputs_per_neuron,
+             std::function<float(float)> act,
+             std::function<float(float)> act_deriv)
+    : activation(act), activation_derivative(act_deriv)
+{
+    for (int i = 0; i < n_neurons; ++i)
+        neurons.emplace_back(n_inputs_per_neuron, activation);
+}
+```
+
+#### Método `load_layer`
+
+Este método permite **cargar pesos y sesgos específicos** a cada neurona de la capa, útil para inicializar una red previamente entrenada o reproducir experimentos.
+
+```cpp
+void Layer::load_layer(int n_neurons, int n_inputs_per_neuron,
+                       std::function<float(float)> act,
+                       std::function<float(float)> act_deriv,
+                       const std::vector<std::vector<float>> &all_weights = {},
+                       const std::vector<float> &all_biases = {})
+{
+    activation = act;
+    activation_derivative = act_deriv;
+    neurons.clear();
+    neurons.reserve(n_neurons);
+    for (int i = 0; i < n_neurons; ++i)
+    {
+        neurons.emplace_back(n_inputs_per_neuron, act);
+        if (!all_weights.empty() && i < (int)all_weights.size())
+            neurons.back().set_weights(all_weights[i]);
+        if (!all_biases.empty() && i < (int)all_biases.size())
+            neurons.back().set_sesgo(all_biases[i]);
+    }
+    last_input.clear();
+    last_z.clear();
+}
+```
+
+#### Función `forward`
+
+Realiza la **propagación hacia adelante**, calculando la salida de cada neurona de la capa. Para cada neurona:
+
+1. Calcula `z = w · x + b` (producto punto más sesgo).
+2. Aplica la función de activación `f(z)` y guarda el resultado.
+
+También guarda el `input` y los valores `z` sin activar, que serán usados en el retropropagado (`backward()`).
+
+```cpp
+std::vector<float> Layer::forward(const std::vector<float> &inputs)
+{
+    last_input = inputs;
+    last_z.clear();
+    std::vector<float> outputs;
+    for (auto &n : neurons)
+    {
+        float z = 0.0f;
+        auto weights = n.get_weights();
+        for (size_t i = 0; i < weights.size(); ++i)
+            z += weights[i] * inputs[i];
+        z += n.get_sesgo();
+        last_z.push_back(z);
+        outputs.push_back(activation(z));
+    }
+    return outputs;
+}
+```
+
+#### Función `backward`
+
+Implementa la **retropropagación del error**, que calcula los gradientes locales de esta capa basándose en el error proveniente de la siguiente capa.
+
+Para cada neurona `i` en esta capa:
+
+- Se calcula la suma ponderada de los errores de la siguiente capa.
+- Se multiplica por la derivada de la función de activación evaluada en `z_i`.
+
+Devuelve un vector con los **errores (deltas)** para cada neurona, que serán utilizados para actualizar los pesos.
+
+```cpp
+std::vector<float> Layer::backward(const std::vector<float> &deltas_next,
+                                   const std::vector<std::vector<float>> &weights_next)
+{
+    std::vector<float> deltas(neurons.size(), 0.0f);
+    for (size_t i = 0; i < neurons.size(); ++i)
+    {
+        float sum = 0.0f;
+        for (size_t j = 0; j < deltas_next.size(); ++j)
+            sum += weights_next[j][i] * deltas_next[j];
+        deltas[i] = sum * activation_derivative(last_z[i]);
+    }
+    return deltas;
+}
+```
+
+#### Función `update_weights`
+
+Actualiza los pesos y sesgos de cada neurona usando la regla delta:
+
+![Función Pesos](.docs/f1.png)
+
+Donde:
+
+- `n` es la tasa de aprendizaje `lr`
+- `delta_i` es el error de la neurona
+- `x_j` es la entrada `j` correspondiente
+
+El sesgo también se ajusta en cada neurona según
+
+![Funcion Sesgo](.docs/f2.png)
+
+```cpp
+void Layer::update_weights(float lr, const std::vector<float> &deltas)
+{
+    for (size_t i = 0; i < neurons.size(); ++i)
+        neurons[i].update_weights(last_input, deltas[i], lr);
+}
+```
+
+#### Métodos GET
+
+```cpp
+const std::vector<float> &get_last_input() const;
+const std::vector<float> &get_last_z() const;
+const std::vector<Neuron> &get_neurons() const;
+```
+
+- `get_last_input`: Devuelve el último vector de entrada a la capa.
+- `get_last_z`: Devuelve los valores antes de activación (`z`) de la capa.
+- `get_neurons`: Permite acceder directamente a las neuronas, útil para inspeccionar pesos o salidas individuales.
+
+---
+
+### Clase `MLP`
+
+La clase Perceptrón Multicapa representa una red neuronal con múltiples capas completamente conectadas. Su diseño permite especificar el número de capas, neuronas por capa, funciones de activación y derivadas correspondientes, lo que la hace flexible y extensible.
+
+```cpp
+class MLP
+{
+private:
+    std::vector<Layer> layers;
+    float learning_rate;
+    int input_size;
+    std::vector<std::function<float(float)>> activations;
+    std::vector<std::function<float(float)>> derivatives;
+
+public:
+    MLP() = default;
+    MLP(const std::vector<int> &sizes,
+        const std::vector<std::function<float(float)>> &activations,
+        const std::vector<std::function<float(float)>> &derivatives,
+        float lr = 0.1);
+
+    std::vector<float> predict(const std::vector<float> &input);
+    void train(const std::vector<std::vector<float>> &X,
+               const std::vector<std::vector<float>> &Y,
+               float min_error = 0.001f,
+               bool print = false,
+               const std::string &dataset_filename = "databaese.txt");
+    float mse(const std::vector<float> &pred, const std::vector<float> &target);
+    void backpropagate(const std::vector<float> &output,
+                       const std::vector<float> &target,
+                       std::vector<std::vector<float>> &all_deltas);
+    float train_epoch(const std::vector<std::vector<float>> &X, const std::vector<std::vector<float>> &Y);
+    void log_epoch(std::ofstream &log_file, int epoch, float mse_avg);
+    void save_final_weights(const std::string &path);
+    void print_weights(int epoch, float mse_avg);
+    bool load_from_file(const std::string &filename);
+};
+```
+
+#### Constructor
+
+Inicializa la red neuronal con una lista de tamaños por capa (`sizes`), funciones de activación, derivadas y una tasa de aprendizaje (`learning_rate`). Verifica que haya al menos una capa de entrada y una de salida, y que el número de funciones de activación coincida con el de capas ocultas/salida.
+
+```cpp
+MLP::MLP(const std::vector<int> &sizes,
+         const std::vector<std::function<float(float)>> &activations,
+         const std::vector<std::function<float(float)>> &derivatives,
+         float lr)
+    : learning_rate(lr), activations(activations), derivatives(derivatives),
+      input_size(sizes[0])
+{
+    if (sizes.size() < 2 || activations.size() != sizes.size() - 1)
+        throw std::invalid_argument("Invalid layer or activation sizes");
+    for (size_t i = 1; i < sizes.size(); ++i)
+        layers.emplace_back(Layer(sizes[i], sizes[i - 1], activations[i - 1], derivatives[i - 1]));
+}
+```
+
+#### Método `predict`
+
+Realiza una inferencia hacia adelante (forward pass) sobre la red, aplicando cada capa secuencialmente a la entrada hasta obtener la salida.
+
+```cpp
+std::vector<float> MLP::predict(const std::vector<float> &input)
+{
+    std::vector<float> output = input;
+    for (auto &layer : layers)
+        output = layer.forward(output);
+    return output;
+}
+```
+
+#### Método `mse` (Error Cuadrático Medio)
+
+Calcula el error cuadrático medio entre la salida predicha y la salida esperada, para evaluar el desempeño de la red durante el entrenamiento.
+
+```cpp
+float MLP::mse(const std::vector<float> &pred, const std::vector<float> &target)
+{
+    float sum = 0.0f;
+    for (size_t i = 0; i < pred.size(); ++i)
+        sum += (pred[i] - target[i]) * (pred[i] - target[i]);
+    return sum / pred.size();
+}
+```
+
+#### Método `backpropagate`
+
+Realiza la propagación hacia atrás (backpropagation) del error desde la capa de salida hacia las capas anteriores, utilizando la derivada de la función de activación de cada neurona. Calcula los **deltas** necesarios para la actualización de pesos.
+
+```cpp
+void MLP::backpropagate(const std::vector<float> &output,
+                        const std::vector<float> &target,
+                        std::vector<std::vector<float>> &all_deltas)
+{
+    std::vector<float> delta_output(output.size(), 0.0f);
+    const auto &z_out = layers.back().get_last_z();
+    auto act_deriv = layers.back().get_activation_derivative();
+    for (size_t j = 0; j < output.size(); ++j)
+        delta_output[j] = (target[j] - output[j]) * act_deriv(z_out[j]);
+
+    all_deltas.back() = delta_output;
+
+    for (int l = layers.size() - 2; l >= 0; --l)
+    {
+        std::vector<std::vector<float>> next_weights;
+        for (const auto &n : layers[l + 1].get_neurons())
+            next_weights.push_back(n.get_weights());
+
+        all_deltas[l] = layers[l].backward(all_deltas[l + 1], next_weights);
+    }
+}
+```
+
+#### Método `train_epoch`
+
+Ejecuta una época completa del entrenamiento: realiza forward, backpropagation y actualiza los pesos para cada muestra. Devuelve el error promedio de la época.
+
+```cpp
+float MLP::train_epoch(const std::vector<std::vector<float>> &X,
+                       const std::vector<std::vector<float>> &Y)
+{
+    float error_total = 0.0f;
+    for (size_t i = 0; i < X.size(); ++i)
+    {
+        std::vector<float> output = predict(X[i]);
+        std::vector<std::vector<float>> all_deltas(layers.size());
+        backpropagate(output, Y[i], all_deltas);
+        for (size_t l = 0; l < layers.size(); ++l)
+            layers[l].update_weights(learning_rate, all_deltas[l]);
+        error_total += mse(output, Y[i]);
+    }
+    return error_total / X.size();
+}
+```
+
+#### Método `train`
+
+Realiza el ciclo completo de entrenamiento por épocas. Guarda los resultados de cada época en un archivo de log y permite detener el entrenamiento automáticamente cuando el error cae por debajo de un umbral.
+
+```cpp
+void MLP::train(const std::vector<std::vector<float>> &X,
+                const std::vector<std::vector<float>> &Y,
+                float min_error, bool print,
+                const std::string &dataset_filename)
+{
+    std::string base_name = std::filesystem::path(dataset_filename).stem().string();
+    std::filesystem::path output_dir = std::filesystem::path("output") / base_name;
+    std::filesystem::create_directories(output_dir);
+    std::ofstream log_file(output_dir / "log.txt");
+
+    int e = 0;
+    while (true)
+    {
+        float mse_avg = train_epoch(X, Y);
+        log_epoch(log_file, e, mse_avg);
+        if (print)
+            print_weights(e, mse_avg);
+        if (mse_avg < min_error)
+        {
+            std::cout << "Training stopped at epoch " << e
+                      << " with MSE: " << mse_avg << "\n";
+            break;
+        }
+        e++;
+    }
+    log_file.close();
+    save_final_weights((output_dir / "final.txt").string());
+}
+```
+
+#### Métodos auxiliares
+
+##### `log_epoch`
+
+Registra la información de cada época en un archivo de log.
+
+```cpp
+void MLP::log_epoch(std::ofstream &log_file, int epoch, float mse_avg)
+{
+    log_file << "Epoch " << epoch << " - MSE: " << mse_avg << "\n";
+}
+```
+
+##### `save_final_weights`
+
+Guarda los pesos y sesgos finales de cada neurona en un archivo plano, junto con la estructura de la red y funciones de activación.
+
+```cpp
+void MLP::save_final_weights(const std::string &path)
+{
+    std::ofstream final_file(path);
+    //...
+}
+```
+
+##### `print_weights`
+
+Imprime en consola los pesos y sesgos de cada neurona por capa, útil para depuración.
+
+```cpp
+void MLP::print_weights(int epoch, float mse_avg)
+{
+    std::cout << "Epoch " << epoch << " - MSE: " << mse_avg << "\n";
+    // Itera e imprime pesos y sesgos
+}
+```
+
+##### `load_from_file`
+
+Carga una red previamente entrenada desde un archivo que contenga la arquitectura, tasa de aprendizaje, funciones de activación y pesos.
+
+```cpp
+bool MLP::load_from_file(const std::string &filename)
+{
+    std::ifstream file(filename);
+    // Extrae arquitectura, tasa de aprendizaje y pesos desde archivo plano
+}
+```
+
+---
+
+### Activaciones y Derivadas
+
+Este archivo define un conjunto de **funciones de activación** comunes utilizadas en redes neuronales, junto con sus respectivas **derivadas**, que son esenciales para el cálculo del gradiente durante la propagación hacia atrás (_backpropagation_). Además, proporciona mecanismos para asociar nombres con las funciones usando `std::unordered_map`, lo cual es útil para guardar y cargar redes desde archivos.
+
+#### 1. Sigmoide
+
+La función sigmoide es una función suave que transforma cualquier número real en el rango (0, 1), lo cual la hace útil para problemas de clasificación binaria.
+
+```cpp
+inline float sigmoid(float x)
+{
+    return 1.0f / (1.0f + exp(-x));
+}
+```
+
+Su derivada se expresa en función del resultado de la sigmoide, lo cual mejora el rendimiento computacional:
+
+```cpp
+inline float sigmoid_derivative(float x)
+{
+    float s = sigmoid(x);
+    return s * (1.0f - s);
+}
+```
+
+#### 2. ReLU (Unidad Lineal Rectificada)
+
+La función ReLU es ampliamente usada por su simplicidad y eficiencia. Actúa como una compuerta que solo deja pasar valores positivos.
+
+```cpp
+inline float relu(float x)
+{
+    return x > 0 ? x : 0;
+}
+
+inline float relu_derivative(float x)
+{
+    return x > 0 ? 1.0f : 0.0f;
+}
+```
+
+#### 3. Tangente hiperbólica (`tanh`)
+
+La función tangente hiperbólica es similar a la sigmoide pero con salida en el rango (-1, 1), lo que puede mejorar la convergencia en ciertas redes neuronales profundas.
+
+```cpp
+inline float tanh_fn(float x)
+{
+    return std::tanh(x);
+}
+
+inline float tanh_derivative(float x)
+{
+    float t = std::tanh(x);
+    return 1.0f - t * t;
+}
+```
+
+---
+
+#### Mapas de funciones
+
+Estos mapas permiten registrar funciones por su nombre, facilitando la serialización de redes y su reconstrucción desde archivos:
+
+```cpp
+inline std::unordered_map<std::string, std::function<float(float)>> activation_map = {
+    {"sigmoid", sigmoid},
+    {"relu", relu},
+    {"tanh", tanh_fn}
+};
+
+inline std::unordered_map<std::string, std::function<float(float)>> derivative_map = {
+    {"sigmoid", sigmoid_derivative},
+    {"relu", relu_derivative},
+    {"tanh", tanh_derivative}
+};
+```
+
+#### Recuperación de nombre de función
+
+Estas funciones permiten identificar el nombre asociado a una función de activación o derivada. Esto es útil para guardar la red en disco incluyendo el nombre de cada función.
+
+```cpp
+inline std::string get_activation_name(const std::function<float(float)> &func)
+{
+    auto ptr = func.target<float (*)(float)>();
+    if (ptr && *ptr == sigmoid) return "sigmoid";
+    else if (ptr && *ptr == relu) return "relu";
+    else if (ptr && *ptr == tanh_fn) return "tanh";
+    else return "unknown";
+}
+
+inline std::string get_derivative_name(const std::function<float(float)> &func)
+{
+    auto ptr = func.target<float (*)(float)>();
+    if (ptr && *ptr == sigmoid_derivative) return "sigmoid";
+    else if (ptr && *ptr == relu_derivative) return "relu";
+    else if (ptr && *ptr == tanh_derivative) return "tanh";
+    else return "unknown";
+}
+```
+
+---
+
 ### Ejecutable Train `main_train.cpp`
 
 Se encarga de ejecutar el entrenamiento con un archivo de database.
@@ -402,41 +739,60 @@ std::vector<std::vector<float>> X = dataset.get_X();
 std::vector<float> y = dataset.get_y();
 ```
 
-#### 2. Generación de nombre de archivo para guardar pesos
+#### 2. Conversión de etiquetas
 
-Se genera un nuevo nombre de archivo obteniendo el archivo original desde el último `/` y el último `.` asi a ese nombre le agregamos la extensión `_log.txt`
-
-```cpp
-std::string path = dataset_file;
-size_t last_slash = path.find_last_of("/\\");
-size_t last_dot = path.find_last_of(".");
-std::string base = path.substr(last_slash + 1, last_dot - last_slash - 1);
-...
-std::string filename = base + "_log.txt";
-```
-
-#### 3. Inicialización y entrenamiento del perceptrón
-
-Se inicialiaza el perceptron con los datos recibidos como la cantidad de entradas y se entrena con las listas de entradas y salidas esperadas. Luego se almacenara en el archivo nuevo los resultados.
+Convierte las etiquetas escalares (`float`) en vectores de tamaño 1 para que coincidan con el formato esperado por el MLP (`std::vector<std::vector<float>>`).
 
 ```cpp
-Perceptron p(X[0].size(), 0.1);
-p.train(X, y);
-p.save_weights(filename);
+std::vector<std::vector<float>> Y;
+for (float v : y_scalar)
+    Y.push_back({v});
 ```
 
-#### 4. Muestra de resultados
+#### 3. Configuración del modelo
 
-Se imprimen las posibles entradas con la salida generada por el perceptron ya entrenado.
+Declaramos las variables de cantidad de entradas según el dataset, las funciones de activacion y sus derivadas, y los layers (capa de entrada, 1 capa oculta con 2 neuronas, capa de salida).
 
 ```cpp
-p.print_weights();
-for (auto &input : X)
-    std::cout << "(" << input[0] << ", " << input[1] << ") => "
-              << static_cast<int>(p.predict(input)) << std::endl;
+int n_inputs = X[0].size();
+std::vector<std::function<float(float)>> activations = {sigmoid, relu};
+std::vector<std::function<float(float)>> derivatives = {sigmoid_derivative, relu_derivative};
+std::vector<int> layers = {n_inputs, 2, 1};
 ```
 
-### Ejecutable Train `main_test.cpp`
+#### 4. Instanciación y entrenamiento del MLP
+
+Se crea una red `MLP` con tasa de aprendizaje 0.01, y se entrena hasta que el error sea menor que `0.0001`.
+
+```cpp
+MLP mlp(layers, activations, derivatives, 0.01f);
+std::cout << "Entrenando MLP..." << std::endl;
+mlp.train(X, Y, 0.0001f, false, dataset_file);
+```
+
+#### 5. Evaluación del modelo
+
+Para cada entrada `X[i]`, se calcula una predicción `pred[0]`. Se muestra:
+
+- Los valores de entrada.
+- El valor predicho y su clase binaria (0 o 1, usando un umbral de 0.5).
+- El valor esperado original.
+
+```cpp
+std::cout << "Predicciones:\n";
+for (size_t i = 0; i < X.size(); ++i)
+{
+    std::vector<float> pred = mlp.predict(X[i]);
+    std::cout << "(";
+    for (float val : X[i])
+        std::cout << val << " ";
+    std::cout << ") => " << pred[0] << " ≈ " << (pred[0] > 0.5f ? 1 : 0) << " (esperado: " << Y[i][0] << ")\n";
+}
+```
+
+---
+
+### Ejecutable Test `main_test.cpp`
 
 Se encarga de ejecutar el perceptron pero permite cargar los pesos y realizar una consulta para obtener una salida.
 
@@ -450,160 +806,148 @@ float x2 = std::stof(argv[2]);
 std::string filename = argv[3];
 ```
 
-#### 2. Inicialización del perceptrón y Carga de pesos
+#### 2. Carga del modelo
 
-En este caso se inicializa el Perceptron con 2 cantidades de entradas y con un ratio de aprendizaje de 0.1, y luego se procede a cargar los pesos del archivo ingresado, validando siempre que pueda cargarlo.
+Se crea un objeto `MLP` sin entrenar, y se carga toda la configuración pesos previamente netrenados desde `filename`, si falla la carga, se informa el error.
 
 ```cpp
-Perceptron p(2, 0.1);
-if (!p.load_weights(filename))
+MLP mlp;
+if (!mlp.load_from_file(filename))
 {
-    std::cerr << "Error: Not load weights for training." << std::endl;
+    std::cerr << "Error: Could not load MLP from file: " << filename << std::endl;
     return 1;
 }
 ```
 
-#### 3. Impresión de Pesos Cargados y Salida de Consulta
+#### 3. Impresión de confirmación
 
-Se muestran los pesos cargados del archivo y con las entradas se predice la salida con el perceptrón.
+Se indica que la red fue cargada correctamente y para comprobarlo se imprimen los pesos actuales.
 
 ```cpp
-p.print_weights();
-std::cout << "Input: (" << x1 << ", " << x2 << ") => Output: " << p.predict({x1, x2}) << std::endl;
+std::cout << "MLP loaded successfully from " << filename << std::endl;
+mlp.print_weights(0, 0.0f);
+```
+
+#### 4. Predicción
+
+Se forma un vector de entrada con `x1` y `x2`, y se realiza la predicción usando el método `predict` del MLP.
+
+```cpp
+std::vector<std::vector<float>> X = {{x1, x2}};
+std::vector<float> pred = mlp.predict(X[0]);
+```
+
+#### 5. Salida de resultados
+
+Se muestra la predicción calculada y se binariza para la respuesta.
+
+```cpp
+std::cout << "Predictions:\n";
+std::cout << "(";
+for (float val : X[0])
+    std::cout << val << " ";
+std::cout << ") => " << pred[0] << " ≈ " << (pred[0] > 0.5f ? 1 : 0) << "\n";
 ```
 
 ### Ejecución
+
+Con este comando se generará la carpeta `build` y dentro estarán los dos ejecutables `mlp_test` y `mlp_train`.
 
 ```bash
 make run
 ```
 
-Con este comando se generará la carpeta `build` y dentro estarán los dos ejecutables `perceptron_test` y `perceptron_train`.
-
 #### Ejecución de Entrenamiento
 
 ```bash
-cd build
-./perceptron_train ../database/[name].txt
+./build/mlp_train ./database/[name].txt
 ```
 
 #### Ejecución de Test o Consulta
 
 ```bash
-cd build
-./perceptron_test 0 1 [name]_log.txt
+./build/mlp_test 1 1 ./output/[name]/final.txt
 ```
 
 ### Salida
 
-![Ejecución make](.docs/make_run.png)
+![Ejecución make](.docs/make.png)
 
 #### Ejecución de Entrenamiento
 
-![Ejecución AND TRAIN](.docs/and_train.png)
-
-![Ejecución OR TRAIN](.docs/or_train.png)
+![Ejecución TRAIN](.docs/train.png)
 
 #### Ejecución de Test
 
-![Ejecución AND TEST](.docs/and_test.png)
-
-![Ejecución OR TEST](.docs/or_test.png)
+![Ejecución TEST](.docs/test.png)
 
 ## Implementación en Python
 
-Esta implementación nos servira para comparar el resultado generado en C++ y con la librería `sklearn` que ya tiene incorporada el `Perceptron`.
+Este script en Python sirve para **visualizar cómo disminuye el error cuadrático medio (MSE)** durante el entrenamiento de una red neuronal para distintos conjuntos de datos: `XOR`, `AND` y `OR`. Es útil para analizar el **progreso del aprendizaje del modelo a lo largo de las épocas**.
 
-### 1. Función Cargar Data
+### 1. Función `cargar_mse_por_epoch(path)`
 
-En esta función leeremos los pesos y el sesgo obtenido de nuestros archivos generados en C++.
+Lee un archivo de log línea por línea, extrayendo las épocas (`Epoch X`) y el MSE reportado en esa línea.
 
-```python
-def cargar_data(file):
-    with open(file, 'r') as f:
-        w = list(map(float, f.read().split()))
-    return np.array(w[:-1]), w[-1]
+Ejemplo de línea válida:
 
-w_and, sesgo_and = cargar_data('./build/AND_log.txt')
-w_or, sesgo_or = cargar_data('./build/OR_log.txt')
+```
+Epoch 35 - MSE: 0.004563
 ```
 
-### 2. Datos de entrada y salidas esperadas
-
-Declaramos las entradas posibles `X` y las salidas posibles en cada caso como AND (`y_and`) y OR (`y_or`).
-
 ```python
-X = np.array([[0, 0], [0, 1], [1, 0], [1, 1]])
-y_and = np.array([0, 0, 0, 1])
-y_or = np.array([0, 1, 1, 1])
+def cargar_mse_por_epoch(path):
+    epochs = []
+    mses = []
+    with open(path, 'r') as f:
+        for line in f:
+            match = re.match(r"Epoch\s+(\d+)\s+-\s+MSE:\s+([0-9.eE+-]+)", line)
+            if match:
+                epochs.append(int(match.group(1)))
+                mses.append(float(match.group(2)))
+    return epochs, mses
 ```
 
-### 3. Entrenamiento con Scikit-Learn
+#### 3. Graficado con Matplotlib
 
-Entrena el perceptron con una máxima iteración de 100 epocas y con una taza de aprendizaje de 0.1, que debe obtener un sesgo `fit_intercept` y que si se vuelve a llamar se debe reiniciar desde cero el entrenamiento `warm_start`. Se imprimen los valores de cada entrenamiento (pesos y sesgo).
-
-```python
-clf_and = Perceptron(max_iter=100, eta0=0.1, fit_intercept=True, warm_start=False)
-clf_and.fit(X, y_and)
-print("Pesos (AND):", clf_and.coef_, " Bias:", clf_and.intercept_)
-clf_or = Perceptron(max_iter=100, eta0=0.1, fit_intercept=True, warm_start=False)
-clf_or.fit(X, y_or)
-print("Pesos (OR):", clf_or.coef_, " Bias:", clf_or.intercept_)
-```
-
-### 4. Graficar las fronteras de decisión
-
-El perceptrón separa clases con una línea de decisión definida por:
-
-![Ejecución make](.docs/f7.png)
-
-Despejando x_2:
-
-![Ejecución make](.docs/f8.png)
-
-Y se hace eso con cada valor de los datos cargados de C++ y con los datos del Scikit-Learn.
+Carga los datos y los grafica usando la escala logarítmica en el eje Y para resaltar mejoras pequeñas.
 
 ```python
-axs[0].plot([0, 1], [
-    -sesgo_and / w_and[1],
-    (-sesgo_and - w_and[0]) / w_and[1]
-], label='Neurona C++', color='red')
-axs[0].plot([0, 1], [
-    -clf_and.intercept_ / clf_and.coef_[0, 1],
-    (-clf_and.intercept_ - clf_and.coef_[0, 0]) / clf_and.coef_[0, 1]], label='Python', color='blue')
+fig, axs = plt.subplots(1, 3, figsize=(18, 5))
+...
 ```
 
-### 5. Mostrar gráfico
+### Utilidad
 
-Genera dos gráfico mostrando las fronteras de decisión del perceptrón en C++ y del implementado en la librería de Python.
+- Diagnóstico visual: ayuda a detectar si el modelo está aprendiendo bien o si hay problemas (como sobreajuste o estancamiento).
+- Comparación de rendimientos entre diferentes configuraciones o funciones de activación.
+- Confirmar que el modelo converge (baja del MSE constante).
 
-```python
-plt.show()
-```
+---
 
 ### Ejecución
 
-Después de ejecutar el entrenamiento de AND y OR con C++, podremos ejecutar esto.
+Después de ejecutar el entrenamiento de AND, OR y XOR con C++, podremos ejecutar esto.
 
 ```bash
-python perceptron.py
+python graphic.py
 ```
 
 ### Salida
 
-![Ejecución Python](.docs/python_perceptron.png)
+Este es el Gráfico de comparación entre XOR, AND y OR con las mismas funciones de activación.
 
-![Grafico](.docs/Graphic.png)
+![Grafico](.docs/graphics.png)
+
+Y este el gráfico de comparación entre 5 combinaciones de las 9 posibles para XOR.
+
+![Grafico](.docs/XOR.png)
 
 ## Conclusiones
 
-Los resultados obtenidos muestran una alta coherencia entre ambas implementaciones, tanto en la frontera de decisión como en los parámetros aprendidos. Para la función AND, ambos modelos generaron una frontera de decisión consistente, trazada entre los puntos (2, 0) y (1, 0). En el caso de la función OR, aunque los pesos fueron ligeramente diferentes con un peso en Python de (0.2 0.2 -0.1) y en la C++ (0.1 0.1 -0.1), lo que indica que los modelos aprendieron la misma relación subyacente de manera equivalente, ya que se ve en le gráfico lineas paralelas.
+Los resultados del entrenamiento mostraron que, para problemas simples como AND y OR, el perceptrón fue más eficiente, logrando converger en solo 4 épocas con resultados correctos. En cambio, aunque el MLP alcanzó una alta precisión (MSE ≈ 1e-4), requirió muchas más épocas, especialmente para OR (casi 450,000), lo que reflejó una menor eficiencia en estos casos. Sin embargo, el MLP, con su arquitectura más compleja y funciones de activación como Sigmoide–ReLU, ofreció mayor flexibilidad y fue más adecuado para problemas no lineales.
 
-La implementación en C++ ofrece un control detallado sobre el comportamiento del algoritmo, lo que resulta beneficioso para casos de uso que requieran optimización personalizada o integración en sistemas de bajo nivel, como futuras implemnetaciones con más neuronas y más pesos. A pesar de las diferencias en los pesos y sesgos entre ambos modelos, los resultados obtenidos de la comparación gráfica y numérica confirman que ambas implementaciones son efectivas para resolver problemas de clasificación binaria como los probados AND y OR.
-
-## Referencias
-
-[1] Frank Rosenblatt. The perceptron: A probabilistic model for information storage and organization in the brain. Psychological Review, 65(6):386–408, 1958.
+Otra observación fue que, al entrenar la red MLP con cinco combinaciones de funciones de activación para resolver XOR, se encontró que las configuraciones ReLU en la capa oculta con Sigmoide en la salida, Sigmoide en ambas capas, y Sigmoide en la oculta con ReLU en la salida fueron las más efectivas, logrando un MSE menor a 1e-4. Destacó la combinación Sigmoide–ReLU por su rápida convergencia en solo 17,171 épocas. La combinación Sigmoide–Tanh también funcionó, pero requirió más del doble de épocas, mientras que Tanh–Sigmoide no logró un error satisfactorio incluso tras 4 millones de épocas.
 
 ## Author
 

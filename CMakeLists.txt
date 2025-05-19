@@ -8,7 +8,6 @@ include_directories(include)
 # Ejecutable de entrenamiento
 add_executable(mlp_train
     main_train.cpp
-    src/perceptron.cpp
     src/neuron.cpp
     src/dataset.cpp
     src/mlp.cpp
@@ -18,7 +17,6 @@ add_executable(mlp_train
 # Ejecutable de prueba
 add_executable(mlp_test
     main_test.cpp
-    src/perceptron.cpp
     src/neuron.cpp
     src/dataset.cpp
     src/mlp.cpp

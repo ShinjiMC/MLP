@@ -88,6 +88,7 @@ void MLP::train(const std::vector<std::vector<float>> &X,
         return;
     }
     int e = 0;
+    float last_mse = 0.0f;
     while (true)
     {
         float mse_avg = train_epoch(X, Y);
@@ -100,7 +101,14 @@ void MLP::train(const std::vector<std::vector<float>> &X,
                       << " with MSE: " << mse_avg << "\n";
             break;
         }
+        if (e == 4000000 && mse_avg == last_mse)
+        {
+            std::cout << "Training stopped at epoch " << e
+                      << " with MSE: " << mse_avg << "\n";
+            break;
+        }
         e++;
+        last_mse = mse_avg;
     }
     log_file.close();
     save_final_weights((output_dir / "final.txt").string());

@@ -12,6 +12,7 @@ add_executable(mlp_train
     src/dataset.cpp
     src/mlp.cpp
     src/layer.cpp
+    src/config.cpp
 )
 
 # Ejecutable de prueba

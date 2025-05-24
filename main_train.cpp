@@ -1,6 +1,7 @@
 #include <iostream>
 #include "mlp.hpp"
 #include "dataset.hpp"
+#include "config.hpp"
 
 int main(int argc, char *argv[])
 {
@@ -24,13 +25,18 @@ int main(int argc, char *argv[])
     for (float v : y_scalar)
         Y.push_back({v});
     int n_inputs = X[0].size();
-    std::vector<std::function<float(float)>> activations = {sigmoid, relu};
-    std::vector<std::function<float(float)>> derivatives = {sigmoid_derivative, relu_derivative};
-    std::vector<int> layers = {n_inputs, 2, 1};
-    MLP mlp(layers, activations, derivatives, 0.01f);
-    std::cout << "Entrenando MLP..." << std::endl;
+
+    // config
+    Config cfg;
+    cfg.load_config("config/initial.txt", n_inputs);
+    cfg.print_config();
+
+    // MLP
+    MLP mlp(cfg.get_layer_sizes(), cfg.get_activations(),
+            cfg.get_derivatives(), cfg.get_learning_rate());
+    std::cout << "Training MLP..." << std::endl;
     mlp.train(X, Y, 0.0001f, false, dataset_file);
-    std::cout << "Predicciones:\n";
+    std::cout << "Predictions:\n";
     for (size_t i = 0; i < X.size(); ++i)
     {
         std::vector<float> pred = mlp.predict(X[i]);

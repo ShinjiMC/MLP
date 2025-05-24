@@ -28,9 +28,9 @@ public:
     void backpropagate(const std::vector<float> &output,
                        const std::vector<float> &target,
                        std::vector<std::vector<float>> &all_deltas);
-    float train_epoch(const std::vector<std::vector<float>> &X, const std::vector<std::vector<float>> &Y);
+    std::pair<float, float> train_epoch(const std::vector<std::vector<float>> &X, const std::vector<std::vector<float>> &Y);
 
-    void log_epoch(std::ofstream &log_file, int epoch, float mse_avg);
+    void log_epoch(std::ofstream &log_file, int epoch, float mse_avg, float acc);
     void save_final_weights(const std::string &path);
     void print_weights(int epoch, float mse_avg);
     bool load_from_file(const std::string &filename);

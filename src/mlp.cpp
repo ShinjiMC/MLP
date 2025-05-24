@@ -2,6 +2,7 @@
 #include <cmath>
 #include <iostream>
 #include <fstream>
+#include <algorithm>
 #include <filesystem>
 
 MLP::MLP(const std::vector<int> &sizes,
@@ -57,20 +58,43 @@ void MLP::backpropagate(const std::vector<float> &output,
     }
 }
 
-float MLP::train_epoch(const std::vector<std::vector<float>> &X,
-                       const std::vector<std::vector<float>> &Y)
+std::pair<float, float> MLP::train_epoch(const std::vector<std::vector<float>> &X,
+                                         const std::vector<std::vector<float>> &Y)
 {
     float error_total = 0.0f;
+    float correct = 0.0f;
     for (size_t i = 0; i < X.size(); ++i)
     {
         std::vector<float> output = predict(X[i]);
+
+        // Accuracy
+        bool correct_prediction = false;
+        bool is_binary = output.size() == 1;
+        if (is_binary)
+        {
+            bool predicted = output[0] >= 0.5f;
+            bool expected = Y[i][0] >= 0.5f;
+            correct_prediction = predicted == expected;
+        }
+        else
+        {
+            int predicted = std::distance(output.begin(), std::max_element(output.begin(), output.end()));
+            int expected = std::distance(Y[i].begin(), std::max_element(Y[i].begin(), Y[i].end()));
+            correct_prediction = predicted == expected;
+        }
+        if (correct_prediction)
+            ++correct;
+
+        // Backpropagation y update weights
         std::vector<std::vector<float>> all_deltas(layers.size());
         backpropagate(output, Y[i], all_deltas);
         for (size_t l = 0; l < layers.size(); ++l)
             layers[l].update_weights(learning_rate, all_deltas[l]);
         error_total += mse(output, Y[i]);
     }
-    return error_total / X.size();
+    float mse_avg = error_total / X.size();
+    float acc = correct / X.size();
+    return {mse_avg, acc};
 }
 
 void MLP::train(const std::vector<std::vector<float>> &X,
@@ -91,8 +115,8 @@ void MLP::train(const std::vector<std::vector<float>> &X,
     float last_mse = 0.0f;
     while (true)
     {
-        float mse_avg = train_epoch(X, Y);
-        log_epoch(log_file, e, mse_avg);
+        auto [mse_avg, acc] = train_epoch(X, Y);
+        log_epoch(log_file, e, mse_avg, acc);
         if (print)
             print_weights(e, mse_avg);
         if (mse_avg < min_error)
@@ -114,9 +138,9 @@ void MLP::train(const std::vector<std::vector<float>> &X,
     save_final_weights((output_dir / "final.txt").string());
 }
 
-void MLP::log_epoch(std::ofstream &log_file, int epoch, float mse_avg)
+void MLP::log_epoch(std::ofstream &log_file, int epoch, float mse_avg, float acc)
 {
-    log_file << "Epoch " << epoch << " - MSE: " << mse_avg << "\n";
+    log_file << "Epoch " << epoch << " - MSE: " << mse_avg << " - ACC: " << acc << "\n";
 }
 
 void MLP::save_final_weights(const std::string &path)
